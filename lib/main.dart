@@ -183,7 +183,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String _currentQuestion = '';
   String _currentCategory = '';
   String _currentAnswer = '';
-  int _currentValue = 0;
+  String _currentValue = '';
   bool _buzzed = false;
 
   @override
@@ -200,17 +200,20 @@ class _MyHomePageState extends State<MyHomePage> {
         _randomData = fetchRandomGame(_data!);
         _currentQuestion = _randomData![0];
         _currentCategory = _randomData![1];
+        _currentAnswer = _randomData![2];
+        _currentValue = _randomData![3];
       });
     }
   }
 
-  void _skipQuestion() {
+  void _loadNewQuestion() {
     if (!_buzzed){
       List<String> randomData = fetchRandomGame(_data!); 
       setState(() {
         _currentCategory = randomData[1];
         _currentQuestion = randomData[0];
         _currentAnswer = randomData[2];
+        _currentValue = randomData[3];
       });
     } 
   }
@@ -245,7 +248,8 @@ class _MyHomePageState extends State<MyHomePage> {
               icon: const Icon(Icons.close, color: Colors.white),
               onPressed: () {
                 setState(() {
-                  _buzzed = true;
+                  _buzzed = false;
+                  _loadNewQuestion();
                 });                    
               },
             ),
@@ -260,7 +264,8 @@ class _MyHomePageState extends State<MyHomePage> {
               icon: const Icon(Icons.check, color: Colors.white),
               onPressed: () {
                 setState(() {
-                  _buzzed = true;
+                  _buzzed = false;
+                  _loadNewQuestion();
                 });                    
               },
             ),
@@ -272,18 +277,17 @@ class _MyHomePageState extends State<MyHomePage> {
         width: Variables.screenWidth * 0.8, 
         color: Colors.white, // White background color
         padding: const EdgeInsets.all(16), // Padding for the white background
-        child: Text(
-          _currentAnswer, 
-          style: const TextStyle(
-            fontSize: 16,
-            color: Colors.black, // Text color against white background
+        
+        child: Center(
+          child: Text(
+            'ANSWER: $_currentAnswer'.toUpperCase(), 
+            style: const TextStyle(
+              fontSize: 20,
+              color: Colors.black, // Text color against white background
+            ),
           ),
         ),
       );
-    }
-    else{
-      buttonsWidget = const SizedBox();
-      answerWidget = const SizedBox();
     }
 
     return Scaffold(
@@ -297,11 +301,20 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: Variables.screenHeight * 0.15),
+                SizedBox(height: Variables.screenHeight * 0.1), 
+                Text(
+                  '\$$_currentValue', 
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromARGB(255, 211, 191, 9), 
+                    ),
+                  ),
+                SizedBox(height: Variables.screenHeight * 0.03), // category container and below
                 Container(
                   color: const Color.fromARGB(255, 240, 238, 233),
                   width: Variables.screenWidth * 0.8,
-                  padding: EdgeInsets.all(Variables.screenHeight * 0.02),
+                  padding: EdgeInsets.all(Variables.screenHeight * 0.04), // CATEGORY CONTAINER
                   child: Center(
                     child: Text(
                       _currentCategory,
@@ -312,48 +325,54 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ),
                 ),
-                SizedBox(height: Variables.screenHeight * 0.05),
+                SizedBox(height: Variables.screenHeight * 0.1), // everything below the question
                 Padding(
                   padding: EdgeInsets.symmetric(
-                    horizontal: Variables.screenWidth * 0.05,
+                    horizontal: Variables.screenWidth * 0.03, // question width
                   ),
-                  child: Text(
-                    _currentQuestion,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontStyle: FontStyle.italic,
-                      color: Colors.white,
+                  child: SizedBox(
+                    height: Variables.screenHeight * 0.1, // answer and below
+                    child: Text(
+                      _currentQuestion,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
                 answerWidget,
-                SizedBox(height: Variables.screenHeight * 0.1),
+                SizedBox(height: Variables.screenHeight * 0.065), // textfield and below
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(),
-                      hintText: 'Type here...',
+                  child: Visibility(
+                    visible: !_buzzed,
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(),
+                        hintText: 'Type here...',
+                      ),
+                      controller: controller,
+                      enabled: !_buzzed,
+                      onSubmitted: (value){
+                        setState(() {
+                          _buzzed = true;
+                          controller.clear();
+                        });                    
+                      },
                     ),
-                    controller: controller,
-                    enabled: !_buzzed,
-                    onSubmitted: (value){
-                      setState(() {
-                        _buzzed = true;
-                        controller.clear();
-                      });                    
-                    },
                   ),
                 ),
-                SizedBox(height: Variables.screenHeight * 0.1),
+                SizedBox(height: Variables.screenHeight * 0.04), // skip button
                 Positioned(
                   bottom: 0,
                   right: 0,
                   child: ElevatedButton(
-                    onPressed: _skipQuestion,
+                    onPressed: _loadNewQuestion,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color.fromARGB(177, 204, 23, 23),
                       shape: const RoundedRectangleBorder(
@@ -370,7 +389,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ),
                 ),
-                SizedBox(height: Variables.screenHeight * 0.1),
+                SizedBox(height: Variables.screenHeight * 0.05), // below skip button
                 buttonsWidget,
               ],
             ),
