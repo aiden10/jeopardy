@@ -99,10 +99,21 @@ class _MyHomePageState extends State<MyHomePage> { // class which represents a S
     });
   }
 
+Your root widget that extends the Stateful widget class is comprised of two sections. Everything before the build method and everything
+within it. The stuff inside the build method is the relevant widgets that make up how it looks, and the stuff before it are basically the constructor
+and any additional functions.
+
+Exclamation points: if something might be null and you use it in such a way that if it is null it causes your program to encounter an error,
+it won't compile in the first place. So if you are sure that it won't ever be null then you can add the exclamation mark to let it compile. 
+
+Updating interface conditionally: basically update the condition, then call setState to force a rebuild (now I see why constant widgets are important).
+At the top of your build initialize a new widget object/variable. Only add the contents that you want to display inside the condition.
+This way you can add it to your root returned widget and it won't do anything until the condition is met. 
+
 To do:
-- Load JSON
-- Properly display random questions and their category
-- Make skip button load a random question
+- Load JSON x
+- Properly display random questions and their category x
+- Make skip button load a random question x
 - Add buttons to designate incorrect and correct guesses when text is submitted
 - Indicators for correct and incorrect (score?)
 - Stats
@@ -110,9 +121,42 @@ To do:
 import 'package:flutter/material.dart';
 import 'variables.dart';
 import 'dart:math'; // For generating random numbers
+import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:logger/logger.dart';
+
+final logger = Logger();
+final Random random = Random();
+final data = loadJsonData();
+TextEditingController controller = TextEditingController();
 
 void main() {
   runApp(const MyApp());
+}
+
+Future<Map<String, dynamic>?> loadJsonData() async { // what question mark does I don't know
+  try {
+    String jsonData = await rootBundle.loadString('assets/jeopardy.json');
+
+    Map<String, dynamic> data = json.decode(jsonData);
+    logger.i('JSON loaded');
+    return data;
+  }
+  
+  catch (e) {
+    logger.e('Error loading JSON: $e');
+    return null;
+  }
+}
+
+List<String> fetchRandomGame(Map<String, dynamic> data){
+  int randomGameNum = random.nextInt(9013) + 1;
+  int randomQuestionNum = random.nextInt(data[randomGameNum.toString()]['jeopardy'].length);
+  String answer = (data[randomGameNum.toString()]['jeopardy'])[randomQuestionNum]['a'];
+  String category = (data[randomGameNum.toString()]['jeopardy'])[randomQuestionNum]['cat'];
+  int value = (data[randomGameNum.toString()]['jeopardy'])[randomQuestionNum]['val'];
+  String question = (data[randomGameNum.toString()]['jeopardy'])[randomQuestionNum]['q'];
+  return [question, category, answer, value.toString()];
 }
 
 class MyApp extends StatelessWidget { // Widget representing the app as a whole
@@ -134,36 +178,113 @@ class MyHomePage extends StatefulWidget { // stateful MyHomePage widget
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String _currentCategory = "Geography";
-  String _currentQuestion = "(Jimmy of the Clue Crew presents by a display monitor.) The border between the Greek regions of Macedonia and Thessaly is the location of this legendary home of the gods";
+  Map<String, dynamic>? _data;
+  List<String>? _randomData;
+  String _currentQuestion = '';
+  String _currentCategory = '';
+  String _currentAnswer = '';
+  int _currentValue = 0;
+  bool _buzzed = false;
 
-  final List<Map<String, String>> _questions = [
-    {
-      "category": "Geography",
-      "question": "(Jimmy of the Clue Crew presents by a display monitor.) The border between the Greek regions of Macedonia and Thessaly is the location of this legendary home of the gods"
-    },
-    {
-      "category": "Science",
-      "question": "What is the powerhouse of the cell?"
-    },
-    {
-      "category": "History",
-      "question": "Who was the first president of the United States?"
-    },
-  ];
-
-  void _skipQuestion() {
-    final random = Random();
-    final newQuestion = _questions[random.nextInt(_questions.length)];
-    setState(() {
-      _currentCategory = newQuestion["category"]!;
-      _currentQuestion = newQuestion["question"]!;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
   }
 
+    Future<void> _loadData() async {
+    final data = await loadJsonData();
+    if (data != null) {
+      setState(() {
+        _data = data;
+        _randomData = fetchRandomGame(_data!);
+        _currentQuestion = _randomData![0];
+        _currentCategory = _randomData![1];
+      });
+    }
+  }
+
+  void _skipQuestion() {
+    if (!_buzzed){
+      List<String> randomData = fetchRandomGame(_data!); 
+      setState(() {
+        _currentCategory = randomData[1];
+        _currentQuestion = randomData[0];
+        _currentAnswer = randomData[2];
+      });
+    } 
+  }
+  
   @override
   Widget build(BuildContext context) {
     Variables.init(context); // Load class with constant variables for use
+
+    if (_data == null){ // if JSON is loading, show progress bar
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(), 
+        ),
+      );
+    }
+
+    Widget buttonsWidget = const SizedBox(); 
+    Widget answerWidget = const SizedBox();
+
+    if (_buzzed) {
+      // Show the buttons if submission has occurred
+      buttonsWidget = Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            margin: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.red, 
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  _buzzed = true;
+                });                    
+              },
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.green, 
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.check, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  _buzzed = true;
+                });                    
+              },
+            ),
+          ),
+        ],
+      );
+      
+      answerWidget = Container(
+        width: Variables.screenWidth * 0.8, 
+        color: Colors.white, // White background color
+        padding: const EdgeInsets.all(16), // Padding for the white background
+        child: Text(
+          _currentAnswer, 
+          style: const TextStyle(
+            fontSize: 16,
+            color: Colors.black, // Text color against white background
+          ),
+        ),
+      );
+    }
+    else{
+      buttonsWidget = const SizedBox();
+      answerWidget = const SizedBox();
+    }
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(121, 184, 171, 171),
@@ -206,36 +327,51 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ),
                 ),
+                answerWidget,
                 SizedBox(height: Variables.screenHeight * 0.1),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: TextField(
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(),
                       hintText: 'Type here...',
                     ),
+                    controller: controller,
+                    enabled: !_buzzed,
+                    onSubmitted: (value){
+                      setState(() {
+                        _buzzed = true;
+                        controller.clear();
+                      });                    
+                    },
                   ),
                 ),
                 SizedBox(height: Variables.screenHeight * 0.1),
-                ElevatedButton(
-                  onPressed: _skipQuestion,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(177, 204, 23, 23),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: ElevatedButton(
+                    onPressed: _skipQuestion,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(177, 204, 23, 23),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                      ),
+                      minimumSize: const Size(175, 65),
                     ),
-                    minimumSize: const Size(175, 65),
-                  ),
-                  child: const Text(
-                    'Skip',
-                    style: TextStyle(
-                      fontSize: 22,
-                      color: Colors.white,
+                    child: const Text(
+                      'Skip',
+                      style: TextStyle(
+                        fontSize: 22,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
+                SizedBox(height: Variables.screenHeight * 0.1),
+                buttonsWidget,
               ],
             ),
           ),

@@ -9,8 +9,5 @@ class Variables {
   static void init(BuildContext context){
     screenWidth = MediaQuery.of(context).size.width;
     screenHeight = MediaQuery.of(context).size.height;
-    print('Screen Width:  $screenWidth');
-    print('Screen Height:  $screenHeight');
   }
-
 }
