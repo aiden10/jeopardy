@@ -114,7 +114,7 @@ To do:
 - Load JSON x
 - Properly display random questions and their category x
 - Make skip button load a random question x
-- Add buttons to designate incorrect and correct guesses when text is submitted
+- Add buttons to designate incorrect and correct guesses when text is submitted x
 - Indicators for correct and incorrect (score?)
 - Stats
 */
@@ -124,6 +124,7 @@ import 'dart:math'; // For generating random numbers
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:logger/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final logger = Logger();
 final Random random = Random();
@@ -159,6 +160,27 @@ List<String> fetchRandomGame(Map<String, dynamic> data){
   return [question, category, answer, value.toString()];
 }
 
+class SharedPreferencesService {
+  static SharedPreferences? _preferences;
+
+  static Future<void> init() async {
+    _preferences = await SharedPreferences.getInstance();
+  }
+
+  Future<void> saveStreak(int streak) async {
+    // Sample Usage
+    // int newHighScore = 1000;
+    // await SharedPreferencesService.saveHighScore(newHighScore);
+    await _preferences?.setInt('streak', streak);
+  }
+
+  int? getStreak() {
+    // Sample Usage
+    // int? retrievedScore = SharedPreferencesService.getHighScore();
+    return _preferences?.getInt('streak');
+  }
+}
+
 class MyApp extends StatelessWidget { // Widget representing the app as a whole
   const MyApp({super.key});
 
@@ -185,6 +207,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String _currentAnswer = '';
   String _currentValue = '';
   bool _buzzed = false;
+  bool _displayInfo = false;
 
   @override
   void initState() {
