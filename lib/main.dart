@@ -52,7 +52,8 @@ List<String> fetchRandomGame(Map<String, dynamic> data){
   String category = (data[randomGameNum.toString()][doubleOrRegular])[randomQuestionNum]['cat'];
   int value = (data[randomGameNum.toString()][doubleOrRegular])[randomQuestionNum]['val'];
   String question = (data[randomGameNum.toString()][doubleOrRegular])[randomQuestionNum]['q'];
-  return [question, category, answer, value.toString()];
+  String date = data[randomGameNum.toString()]['airDate'];
+  return [question, category, answer, value.toString(), date, randomGameNum.toString()];
 }
 
 class MyApp extends StatelessWidget { // Widget representing the app as a whole
@@ -81,6 +82,8 @@ class GameState extends State<MyHomePage> {
   String _currentCategory = '';
   String _currentAnswer = '';
   String _currentValue = '';
+  String _currentQuestionDate = '';
+  String _currentQuestionGameNum = '';
   bool _buzzed = false;
   bool _displayInfo = false;
   int _money = 0;
@@ -110,6 +113,8 @@ class GameState extends State<MyHomePage> {
         _currentCategory = _randomData![1];
         _currentAnswer = _randomData![2];
         _currentValue = _randomData![3];
+        _currentQuestionDate = _randomData![4];
+        _currentQuestionGameNum = _randomData![5];
         _money = prefs?.getInt('money') ?? 0; // default value of 0 if assignment fails
         _currentStreak = prefs?.getInt('streak') ?? 0;
         _correctAnswerCount = prefs?.getInt('correctAnswerCount') ?? 0;
@@ -128,6 +133,8 @@ class GameState extends State<MyHomePage> {
       _currentQuestion = randomData[0];
       _currentAnswer = randomData[2];
       _currentValue = randomData[3];
+      _currentQuestionDate = randomData[4];
+      _currentQuestionGameNum = randomData[5];
       _accuracy = _correctAnswerCount / (_correctAnswerCount + _incorrectAnswerCount); 
       storeDoubleValue('accuracy', _accuracy);
     });
@@ -217,7 +224,7 @@ class GameState extends State<MyHomePage> {
       storeIntValue('incorrectAnswerCount', 0);
       storeIntValue('correctAnswerCount', 0);
       storeIntValue('skippedCount', 0);
-      storeDoubleValue('accuracy', 0);
+      storeDoubleValue('accuracy', 0.0);
     });
   }
 
@@ -311,9 +318,11 @@ class GameState extends State<MyHomePage> {
   Number of Correct Answers: $_correctAnswerCount
   Number of Questions Skipped: $_skippedCount
   Accuracy: ${(_accuracy * 100).toStringAsFixed(2)}%
+  Game Number: $_currentQuestionGameNum
+  Question Date: $_currentQuestionDate
                         """,
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 17.5,
                         color: Colors.white,
                       ),
                     ),
