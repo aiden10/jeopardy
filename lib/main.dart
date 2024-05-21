@@ -11,9 +11,7 @@ To do:
 - Question history
 */
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'variables.dart';
 import 'dart:math'; // For generating random numbers
 import 'dart:convert';
@@ -72,10 +70,10 @@ class MyHomePage extends StatefulWidget { // stateful MyHomePage widget
   const MyHomePage({super.key});
 
   @override
-  _MyHomePageState createState() => _MyHomePageState(); // every StatefulWidget must implement the createState method and have a State which then gets updated
+  GameState createState() => GameState(); // every StatefulWidget must implement the createState method and have a State which then gets updated
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class GameState extends State<MyHomePage> {
   SharedPreferences? prefs;
   Map<String, dynamic>? _data;
   List<String>? _randomData;
