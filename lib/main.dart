@@ -120,7 +120,7 @@ class GameState extends State<MyHomePage> {
         _correctAnswerCount = prefs?.getInt('correctAnswerCount') ?? 0;
         _incorrectAnswerCount = prefs?.getInt('incorrectAnswerCount') ?? 0;
         _skippedCount = prefs?.getInt('skippedCount') ?? 0;
-        _accuracy = prefs?.getDouble('accuracy') ?? 0;
+        _accuracy = prefs?.getDouble('accuracy') ?? 0.0;
         _earnings = prefs?.getInt('earnings') ?? 0;
       });
     }
@@ -300,7 +300,7 @@ class GameState extends State<MyHomePage> {
           Center(
             child: Container(
               width: Variables.screenWidth * 0.9, // Width of the square
-              height: Variables.screenHeight * 0.35, // Height of the square
+              height: Variables.screenHeight * 0.45, // Height of the square
               decoration: BoxDecoration(
                 border: Border.all(width: 10, color: const Color.fromARGB(255, 144, 120, 47)),
                 color: const Color.fromARGB(255, 108, 96, 60).withOpacity(0.85), // Half-transparent black color
@@ -309,21 +309,24 @@ class GameState extends State<MyHomePage> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(6, 6, 0, 0),
-                    child: Text(
-                      """
-  Total Money Earned: \$$_money
-  Earnings: \$$_earnings
-  Current Streak: $_currentStreak
-  Number of Incorrect Answers: $_incorrectAnswerCount
-  Number of Correct Answers: $_correctAnswerCount
-  Number of Questions Skipped: $_skippedCount
-  Accuracy: ${(_accuracy * 100).toStringAsFixed(2)}%
-  Game Number: $_currentQuestionGameNum
-  Question Date: $_currentQuestionDate
-                        """,
-                      style: const TextStyle(
-                        fontSize: 17.5,
-                        color: Colors.white,
+                    child: FittedBox(
+                      fit: BoxFit.fitHeight,
+                      child: Text(
+                        """
+Total Money Earned: \$$_money
+Earnings: \$$_earnings
+Current Streak: $_currentStreak
+Number of Incorrect Answers: $_incorrectAnswerCount
+Number of Correct Answers: $_correctAnswerCount
+Number of Questions Skipped: $_skippedCount
+Accuracy: ${(_accuracy * 100).toStringAsFixed(2)}%
+Game Number: $_currentQuestionGameNum
+Question Date: $_currentQuestionDate
+                          """,
+                        style: const TextStyle(
+                          fontSize: 17.5,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -367,7 +370,7 @@ class GameState extends State<MyHomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    SizedBox(height: Variables.screenHeight * 0.05), // Adjust height as needed
+                    SizedBox(height: Variables.screenHeight * 0.07), // Adjust height as needed
                     Text(
                       '\$$_currentValue',
                       style: const TextStyle(
@@ -376,7 +379,7 @@ class GameState extends State<MyHomePage> {
                         color: Color.fromARGB(255, 211, 191, 9),
                       ),
                     ),
-                    SizedBox(height: Variables.screenHeight * 0.05),
+                    SizedBox(height: Variables.screenHeight * 0.03),
                     Container(
                       color: const Color.fromARGB(255, 240, 238, 233),
                       width: Variables.screenWidth * 0.8,
@@ -474,8 +477,9 @@ class GameState extends State<MyHomePage> {
           Align(
             alignment: Alignment.topRight,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 26, 12, 0),
+              padding: const EdgeInsets.fromLTRB(0, 50, 20, 0),
               child: IconButton(
+                iconSize: Variables.screenHeight * 0.04,
                 icon: const Icon(Icons.info, color: Colors.white),
                 onPressed: () {
                   setState(() {
