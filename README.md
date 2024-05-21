@@ -1,16 +1,8 @@
 # jeopardy
 
-A new Flutter project.
+## Allows users to play Jeopardy questions and track scores. 
+![image](https://github.com/aiden10/jeopardy/assets/51337166/d18f58d6-c4f6-41e4-bbe6-a4004b5c6255)
 
-## Getting Started
+![image](https://github.com/aiden10/jeopardy/assets/51337166/5c9669c8-8206-4f5f-af75-d5b553a3414c)
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+![image](https://github.com/aiden10/jeopardy/assets/51337166/4740cd23-e88f-4125-b78c-74b93639cbf7)
