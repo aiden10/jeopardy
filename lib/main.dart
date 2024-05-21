@@ -1,16 +1,17 @@
 /*
 To do:
-- Indicators for correct and incorrect (score/money earned?)
-- Stat tracking
-- Stats menu
+- Indicators for correct and incorrect (score/money earned?) x
+- Stat tracking x
+- Stats menu x
 - Polish
 - Daily doubles
 - Final jeopardy
 - Allow full games to be played (might as well be a different app)
 - Ads?
+- Question history
 */
+
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'variables.dart';
 import 'dart:math'; // For generating random numbers
 import 'dart:convert';
@@ -193,6 +194,27 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  void resetStats(){
+    setState(() {
+      _money = 0;
+      _currentStreak = 0;
+      _correctAnswerCount = 0;
+      _incorrectAnswerCount = 0;
+      _skippedCount = 0;
+      _accuracy = 0; 
+      _earnings = 0;  
+      _sessionMoney = 0;
+
+      storeIntValue('money', 0);
+      storeIntValue('earnings', 0);
+      storeIntValue('streak', 0);
+      storeIntValue('incorrectAnswerCount', 0);
+      storeIntValue('correctAnswerCount', 0);
+      storeIntValue('skippedCount', 0);
+      storeDoubleValue('accuracy', 0);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     Variables.init(context); // Load class with constant variables for use
@@ -270,20 +292,42 @@ class _MyHomePageState extends State<MyHomePage> {
               border: Border.all(width: 10, color: const Color.fromARGB(255, 144, 120, 47)),
               color: const Color.fromARGB(255, 108, 96, 60).withOpacity(0.85), // Half-transparent black color
             ),
-            child: Text(
-              """Total Money Earned: $_money
-Earnings: $_earnings
+            child: Stack(
+              children: [Padding(
+                padding: const EdgeInsets.fromLTRB(6, 6, 0, 0),
+                child: Text(
+                """
+Total Money Earned: \$$_money
+Earnings: \$$_earnings
 Current Streak: $_currentStreak
 Number of Incorrect Answers: $_incorrectAnswerCount
 Number of Correct Answers: $_correctAnswerCount
 Number of Questions Skipped: $_skippedCount
 Accuracy: ${_accuracy.toStringAsFixed(2)}%
-              """,
-              style: const TextStyle(
-                fontSize: 18,
-                color: Colors.white,
+                  """,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                    ),
+                  ),
                 ),
-              ),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(225, 216, 168, 21),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(3))
+                      ),
+                      minimumSize: Size(Variables.screenWidth * 0.9, Variables.screenHeight * 0.055) 
+                    ),
+                    onPressed: (){
+                      resetStats();
+                    }, 
+                    child: const Text('Reset Stats', style: TextStyle(fontSize: 18, color: Colors.white))),
+                )
+              ],
+            ),
             ),
           ),
         ],
@@ -348,21 +392,26 @@ Accuracy: ${_accuracy.toStringAsFixed(2)}%
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: Visibility(
                         visible: !_buzzed,
-                        child: TextField(
-                          decoration: const InputDecoration(
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(),
-                            hintText: 'What/Who is...',
-                          ),
-                          controller: controller,
-                          enabled: !_buzzed,
-                          onSubmitted: (value) {
-                            setState(() {
-                              _buzzed = true;
-                              controller.clear();
-                            });
+                        child: TapRegion(
+                          onTapOutside: (PointerDownEvent event) {
+                            FocusManager.instance.primaryFocus?.unfocus();
                           },
+                          child: TextField(
+                            decoration: const InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(),
+                              hintText: 'What/Who is...',
+                            ),
+                            controller: controller,
+                            enabled: !_buzzed,
+                            onSubmitted: (value) {
+                              setState(() {
+                                _buzzed = true;
+                                controller.clear();
+                              });
+                            },
+                          ),
                         ),
                       ),
                     ),
