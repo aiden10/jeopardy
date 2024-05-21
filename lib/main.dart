@@ -4,9 +4,13 @@ To do:
 - Stat tracking
 - Stats menu
 - Polish
-- Ads
+- Daily doubles
+- Final jeopardy
+- Allow full games to be played (might as well be a different app)
+- Ads?
 */
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'variables.dart';
 import 'dart:math'; // For generating random numbers
 import 'dart:convert';
@@ -26,7 +30,6 @@ void main() {
 Future<Map<String, dynamic>?> loadJsonData() async { // what question mark does I don't know
   try {
     String jsonData = await rootBundle.loadString('assets/jeopardy.json');
-
     Map<String, dynamic> data = json.decode(jsonData);
     logger.i('JSON loaded');
     return data;
@@ -40,11 +43,14 @@ Future<Map<String, dynamic>?> loadJsonData() async { // what question mark does 
 
 List<String> fetchRandomGame(Map<String, dynamic> data){
   int randomGameNum = random.nextInt(9013) + 1;
-  int randomQuestionNum = random.nextInt(data[randomGameNum.toString()]['jeopardy'].length);
-  String answer = (data[randomGameNum.toString()]['jeopardy'])[randomQuestionNum]['a'];
-  String category = (data[randomGameNum.toString()]['jeopardy'])[randomQuestionNum]['cat'];
-  int value = (data[randomGameNum.toString()]['jeopardy'])[randomQuestionNum]['val'];
-  String question = (data[randomGameNum.toString()]['jeopardy'])[randomQuestionNum]['q'];
+  String doubleOrRegular;
+  randomGameNum < 4507 ? doubleOrRegular = 'jeopardy' : doubleOrRegular = 'double';
+
+  int randomQuestionNum = random.nextInt(data[randomGameNum.toString()][doubleOrRegular].length);
+  String answer = (data[randomGameNum.toString()][doubleOrRegular])[randomQuestionNum]['a'];
+  String category = (data[randomGameNum.toString()][doubleOrRegular])[randomQuestionNum]['cat'];
+  int value = (data[randomGameNum.toString()][doubleOrRegular])[randomQuestionNum]['val'];
+  String question = (data[randomGameNum.toString()][doubleOrRegular])[randomQuestionNum]['q'];
   return [question, category, answer, value.toString()];
 }
 
@@ -78,6 +84,12 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _displayInfo = false;
   int _money = 0;
   int _currentStreak = 0;
+  int _correctAnswerCount = 0;
+  int _incorrectAnswerCount = 0;
+  int _skippedCount = 0;
+  int _sessionMoney = 0;
+  double _accuracy = 0; // correct / (incorrect + correct)
+  int _earnings = 0;  
 
   @override
   void initState() {
@@ -98,47 +110,87 @@ class _MyHomePageState extends State<MyHomePage> {
         _currentValue = _randomData![3];
         _money = prefs?.getInt('money') ?? 0; // default value of 0 if assignment fails
         _currentStreak = prefs?.getInt('streak') ?? 0;
+        _correctAnswerCount = prefs?.getInt('correctAnswerCount') ?? 0;
+        _incorrectAnswerCount = prefs?.getInt('incorrectAnswerCount') ?? 0;
+        _skippedCount = prefs?.getInt('skippedCount') ?? 0;
       });
     }
   }
 
   void _loadNewQuestion() {
-    if (!_buzzed){
-      List<String> randomData = fetchRandomGame(_data!); 
-      setState(() {
-        _currentCategory = randomData[1];
-        _currentQuestion = randomData[0];
-        _currentAnswer = randomData[2];
-        _currentValue = randomData[3];
-      });
-    } 
+    List<String> randomData = fetchRandomGame(_data!); 
+    setState(() {
+      _currentCategory = randomData[1];
+      _currentQuestion = randomData[0];
+      _currentAnswer = randomData[2];
+      _currentValue = randomData[3];
+      _accuracy = _correctAnswerCount / (_correctAnswerCount + _incorrectAnswerCount); 
+      storeDoubleValue('accuracy', _accuracy);
+    });
   }
   
   void _correctAnswer() async{
     setState(() {
       _money += int.parse(_currentValue);
+      _earnings += int.parse(_currentValue);
+      _sessionMoney += int.parse(_currentValue);
       _currentStreak++;
+      _correctAnswerCount++;
       storeIntValue('money', _money);
       storeIntValue('streak', _currentStreak);
-
+      storeIntValue('correctAnswerCount', _correctAnswerCount);
+      storeIntValue('earnings', _earnings);
       _buzzed = false;
       _loadNewQuestion();
     });              
   }
+
   void _incorrectAnswer() async{
     setState(() {
-      _money -= int.parse(_currentValue);
       _currentStreak = 0;
+      _incorrectAnswerCount++;
+      _earnings -= int.parse(_currentValue);
+      _sessionMoney -= int.parse(_currentValue);
       storeIntValue('money', _money);
       storeIntValue('streak', _currentStreak);
-
+      storeIntValue('incorrectAnswerCount', _incorrectAnswerCount);
+      storeIntValue('earnings', _earnings);
       _buzzed = false;
       _loadNewQuestion();
     });                    
   }
 
+  void skip() async {
+    setState(() {
+      _buzzed = false;
+      _skippedCount++;
+      storeIntValue('skippedCount', _skippedCount);
+      _loadNewQuestion();
+    });
+  }
+
   void storeIntValue(String key, int value) async{
     await prefs?.setInt(key, value);
+  }
+  
+  void storeDoubleValue(String key, double value) async{
+    await prefs?.setDouble(key, value);
+  }
+
+  Color updateSessionMoneyColor(){
+    int localMoney = _sessionMoney;
+    if (_sessionMoney < 0){
+      localMoney *= -1;
+      int rValue = 85 + (localMoney ~/ 50);
+      return Color.fromARGB(255, rValue, 0, 20);
+    }
+    else if (_sessionMoney == 0){
+      return const Color.fromARGB(255, 255, 255, 255);
+    }
+    else{
+      int gValue = 85 + (localMoney ~/ 50);
+      return Color.fromARGB(255, 0, gValue, 20);
+    }
   }
 
   @override
@@ -212,16 +264,23 @@ class _MyHomePageState extends State<MyHomePage> {
         statsWidget = Stack(
           children: [Center(
           child: Container(
-            width: Variables.screenWidth * 0.8, // Width of the square
+            width: Variables.screenWidth * 0.9, // Width of the square
             height: Variables.screenHeight * 0.35, // Height of the square
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.75), // Half-transparent black color
+              border: Border.all(width: 10, color: const Color.fromARGB(255, 144, 120, 47)),
+              color: const Color.fromARGB(255, 108, 96, 60).withOpacity(0.85), // Half-transparent black color
             ),
             child: Text(
-              """Total Money Earned: $_money \nCurrent Streak: $_currentStreak
+              """Total Money Earned: $_money
+Earnings: $_earnings
+Current Streak: $_currentStreak
+Number of Incorrect Answers: $_incorrectAnswerCount
+Number of Correct Answers: $_correctAnswerCount
+Number of Questions Skipped: $_skippedCount
+Accuracy: ${_accuracy.toStringAsFixed(2)}%
               """,
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 color: Colors.white,
                 ),
               ),
@@ -232,7 +291,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color.fromARGB(121, 184, 171, 171),
+      backgroundColor: const Color.fromARGB(255, 35, 35, 35),
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -294,7 +353,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(),
-                            hintText: 'Type here...',
+                            hintText: 'What/Who is...',
                           ),
                           controller: controller,
                           enabled: !_buzzed,
@@ -312,7 +371,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       bottom: 0,
                       right: 0,
                       child: ElevatedButton(
-                        onPressed: _loadNewQuestion,
+                        onPressed: () {
+                          skip();
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color.fromARGB(177, 204, 23, 23),
                           shape: const RoundedRectangleBorder(
@@ -331,14 +392,18 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     SizedBox(height: Variables.screenHeight * 0.02),
                     buttonsWidget,
+                    Text("\$$_sessionMoney", style: TextStyle(
+                      color: updateSessionMoneyColor(),
+                      fontSize: 32),
+                    ),
                   ],
                 ),
               ),
             ),
           ),
           Positioned(
-            top: 40, // Adjust this value to position it properly
-            right: 20, // Adjust this value to position it properly
+            top: 42, 
+            right: 25, 
             child: IconButton(
               icon: const Icon(Icons.info, color: Colors.white),
               onPressed: () {
@@ -348,7 +413,15 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             ),
           ),
-          statsWidget,
+          TapRegion(
+            onTapOutside: (tap){
+              if (_displayInfo){
+                setState(() {
+                  _displayInfo = !_displayInfo;
+                });
+              } 
+            },
+            child: statsWidget),
         ],
       ),
     );

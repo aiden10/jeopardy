@@ -21,9 +21,8 @@ import random
 
 fh = open(r"C:\Users\aiden\Documents\Jeopardy\jeopardy\lib\jeopardy.json", encoding="utf8")
 data = json.load(fh)
-first = data["1"]["jeopardy"]
+first = data["1"]
 print(first)
-print(data['1']['jeopardy'][0]['q'])
 # for question in first:
 #     print(question)
     # print(question['a'])
