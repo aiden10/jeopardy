@@ -11,7 +11,9 @@ To do:
 - Question history
 */
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'variables.dart';
 import 'dart:math'; // For generating random numbers
 import 'dart:convert';
@@ -91,6 +93,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int _sessionMoney = 0;
   double _accuracy = 0; // correct / (incorrect + correct)
   int _earnings = 0;  
+  double _answerPadding = 0.05;
 
   @override
   void initState() {
@@ -114,6 +117,8 @@ class _MyHomePageState extends State<MyHomePage> {
         _correctAnswerCount = prefs?.getInt('correctAnswerCount') ?? 0;
         _incorrectAnswerCount = prefs?.getInt('incorrectAnswerCount') ?? 0;
         _skippedCount = prefs?.getInt('skippedCount') ?? 0;
+        _accuracy = prefs?.getDouble('accuracy') ?? 0;
+        _earnings = prefs?.getInt('earnings') ?? 0;
       });
     }
   }
@@ -142,6 +147,7 @@ class _MyHomePageState extends State<MyHomePage> {
       storeIntValue('correctAnswerCount', _correctAnswerCount);
       storeIntValue('earnings', _earnings);
       _buzzed = false;
+      _answerPadding = 0.05;
       _loadNewQuestion();
     });              
   }
@@ -157,6 +163,7 @@ class _MyHomePageState extends State<MyHomePage> {
       storeIntValue('incorrectAnswerCount', _incorrectAnswerCount);
       storeIntValue('earnings', _earnings);
       _buzzed = false;
+      _answerPadding = 0.05;
       _loadNewQuestion();
     });                    
   }
@@ -164,6 +171,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void skip() async {
     setState(() {
       _buzzed = false;
+      _answerPadding = 0.05;
       _skippedCount++;
       storeIntValue('skippedCount', _skippedCount);
       _loadNewQuestion();
@@ -188,9 +196,9 @@ class _MyHomePageState extends State<MyHomePage> {
     else if (_sessionMoney == 0){
       return const Color.fromARGB(255, 255, 255, 255);
     }
-    else{
+    else{ // Color.fromARGB(200, 0, 193, 140)
       int gValue = 85 + (localMoney ~/ 50);
-      return Color.fromARGB(255, 0, gValue, 20);
+      return Color.fromARGB(255, 0, gValue, 80);
     }
   }
 
@@ -219,115 +227,120 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     Variables.init(context); // Load class with constant variables for use
 
-    if (_data == null){ // if JSON is loading, show progress bar
+    if (_data == null) { // if JSON is loading, show progress bar
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(), 
+          child: CircularProgressIndicator(),
         ),
       );
     }
 
-    Widget buttonsWidget = const SizedBox(); 
+    Widget buttonsWidget = const SizedBox();
     Widget answerWidget = const SizedBox();
     Widget statsWidget = const SizedBox();
 
-      if (_buzzed) {
-        // Show the buttons if submission has occurred
-        buttonsWidget = Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              margin: const EdgeInsets.all(10),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.red, 
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () {
-                  _incorrectAnswer();
-                },
-              ),
+    if (_buzzed) {
+      // Show the buttons if submission has occurred
+      buttonsWidget = Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            margin: const EdgeInsets.fromLTRB(15, 15, 15, 30),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color.fromARGB(255, 145, 23, 12),
             ),
-            Container(
-              margin: const EdgeInsets.all(10),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.green, 
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.check, color: Colors.white),
-                onPressed: () {
-                  _correctAnswer();
-                },
-              ),
-            ),
-          ],
-        );
-        
-        answerWidget = Container(
-          width: Variables.screenWidth * 0.8, 
-          color: Colors.white, // White background color
-          padding: const EdgeInsets.all(16), // Padding for the white background
-          
-          child: Center(
-            child: Text(
-              'ANSWER: $_currentAnswer'.toUpperCase(), 
-              style: const TextStyle(
-                fontSize: 20,
-                color: Colors.black, // Text color against white background
-              ),
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () {
+                _incorrectAnswer();
+              },
             ),
           ),
-        );
-      }
-
-      if (_displayInfo){
-        statsWidget = Stack(
-          children: [Center(
-          child: Container(
-            width: Variables.screenWidth * 0.9, // Width of the square
-            height: Variables.screenHeight * 0.35, // Height of the square
-            decoration: BoxDecoration(
-              border: Border.all(width: 10, color: const Color.fromARGB(255, 144, 120, 47)),
-              color: const Color.fromARGB(255, 108, 96, 60).withOpacity(0.85), // Half-transparent black color
+          Container(
+            margin: const EdgeInsets.fromLTRB(15, 15, 15, 30),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color.fromARGB(200, 0, 193, 140),
             ),
-            child: Stack(
-              children: [Padding(
-                padding: const EdgeInsets.fromLTRB(6, 6, 0, 0),
-                child: Text(
-                """
-Total Money Earned: \$$_money
-Earnings: \$$_earnings
-Current Streak: $_currentStreak
-Number of Incorrect Answers: $_incorrectAnswerCount
-Number of Correct Answers: $_correctAnswerCount
-Number of Questions Skipped: $_skippedCount
-Accuracy: ${_accuracy.toStringAsFixed(2)}%
-                  """,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
+            child: IconButton(
+              icon: const Icon(Icons.check, color: Colors.white),
+              onPressed: () {
+                _correctAnswer();
+              },
+            ),
+          ),
+        ],
+      );
+
+      answerWidget = Container(
+        width: Variables.screenWidth * 0.8,
+        color: const Color.fromARGB(240, 246, 243, 243), // White background color
+        padding: const EdgeInsets.all(16), // Padding for the white background
+        child: Center(
+          child: Text(
+            'ANSWER: $_currentAnswer'.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 20,
+              color: Colors.black, // Text color against white background
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_displayInfo) {
+      statsWidget = Stack(
+        children: [
+          Center(
+            child: Container(
+              width: Variables.screenWidth * 0.9, // Width of the square
+              height: Variables.screenHeight * 0.35, // Height of the square
+              decoration: BoxDecoration(
+                border: Border.all(width: 10, color: const Color.fromARGB(255, 144, 120, 47)),
+                color: const Color.fromARGB(255, 108, 96, 60).withOpacity(0.85), // Half-transparent black color
+              ),
+              child: Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(6, 6, 0, 0),
+                    child: Text(
+                      """
+  Total Money Earned: \$$_money
+  Earnings: \$$_earnings
+  Current Streak: $_currentStreak
+  Number of Incorrect Answers: $_incorrectAnswerCount
+  Number of Correct Answers: $_correctAnswerCount
+  Number of Questions Skipped: $_skippedCount
+  Accuracy: ${(_accuracy * 100).toStringAsFixed(2)}%
+                        """,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                ),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(225, 216, 168, 21),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(3))
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(225, 216, 168, 21),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(3)),
+                        ),
+                        minimumSize: Size(Variables.screenWidth * 0.9, Variables.screenHeight * 0.055),
                       ),
-                      minimumSize: Size(Variables.screenWidth * 0.9, Variables.screenHeight * 0.055) 
+                      onPressed: () {
+                        resetStats();
+                      },
+                      child: const Text(
+                        'Reset Stats',
+                        style: TextStyle(fontSize: 18, color: Colors.white),
+                      ),
                     ),
-                    onPressed: (){
-                      resetStats();
-                    }, 
-                    child: const Text('Reset Stats', style: TextStyle(fontSize: 18, color: Colors.white))),
-                )
-              ],
-            ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -371,7 +384,7 @@ Accuracy: ${_accuracy.toStringAsFixed(2)}%
                         ),
                       ),
                     ),
-                    SizedBox(height: Variables.screenHeight * 0.12),
+                    SizedBox(height: Variables.screenHeight * 0.05),
                     Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: Variables.screenWidth * 0.025,
@@ -386,8 +399,9 @@ Accuracy: ${_accuracy.toStringAsFixed(2)}%
                         ),
                       ),
                     ),
+                    SizedBox(height: Variables.screenHeight * _answerPadding), // conditional padding
                     answerWidget,
-                    SizedBox(height: Variables.screenHeight * 0.1),
+                    SizedBox(height: Variables.screenHeight * 0.05),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: Visibility(
@@ -399,7 +413,7 @@ Accuracy: ${_accuracy.toStringAsFixed(2)}%
                           child: TextField(
                             decoration: const InputDecoration(
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: Color.fromARGB(240, 246, 243, 243),
                               border: OutlineInputBorder(),
                               hintText: 'What/Who is...',
                             ),
@@ -408,6 +422,7 @@ Accuracy: ${_accuracy.toStringAsFixed(2)}%
                             onSubmitted: (value) {
                               setState(() {
                                 _buzzed = true;
+                                _answerPadding = 0.08;
                                 controller.clear();
                               });
                             },
@@ -416,61 +431,63 @@ Accuracy: ${_accuracy.toStringAsFixed(2)}%
                       ),
                     ),
                     SizedBox(height: Variables.screenHeight * 0.1),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          skip();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(177, 204, 23, 23),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
-                          ),
-                          minimumSize: const Size(175, 65),
+                    ElevatedButton(
+                      onPressed: () {
+                        skip();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 145, 23, 12),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
                         ),
-                        child: const Text(
-                          'Skip',
-                          style: TextStyle(
-                            fontSize: 22,
-                            color: Colors.white,
-                          ),
+                        minimumSize: const Size(175, 65),
+                      ),
+                      child: const Text(
+                        'Skip',
+                        style: TextStyle(
+                          fontSize: 22,
+                          color: Colors.white,
                         ),
                       ),
                     ),
-                    SizedBox(height: Variables.screenHeight * 0.02),
+                    SizedBox(height: Variables.screenHeight * 0.1),
                     buttonsWidget,
-                    Text("\$$_sessionMoney", style: TextStyle(
-                      color: updateSessionMoneyColor(),
-                      fontSize: 32),
+                    Text(
+                      "\$$_sessionMoney",
+                      style: TextStyle(
+                        color: updateSessionMoneyColor(),
+                        fontSize: 32,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
           ),
-          Positioned(
-            top: 42, 
-            right: 25, 
-            child: IconButton(
-              icon: const Icon(Icons.info, color: Colors.white),
-              onPressed: () {
-                setState(() {
-                  _displayInfo = !_displayInfo;
-                });
-              },
+          Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 26, 12, 0),
+              child: IconButton(
+                icon: const Icon(Icons.info, color: Colors.white),
+                onPressed: () {
+                  setState(() {
+                    _displayInfo = !_displayInfo;
+                  });
+                },
+              ),
             ),
           ),
           TapRegion(
-            onTapOutside: (tap){
-              if (_displayInfo){
+            onTapOutside: (tap) {
+              if (_displayInfo) {
                 setState(() {
                   _displayInfo = !_displayInfo;
                 });
-              } 
+              }
             },
-            child: statsWidget),
+            child: statsWidget,
+          ),
         ],
       ),
     );
